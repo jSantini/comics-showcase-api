@@ -11,18 +11,26 @@ export interface Comic {
   readonly publicationYear: number;
   readonly shortSynopsis: string;
   readonly synopsis: string;
-  readonly coverKey: string;
+  readonly coverKey?: string;
+  readonly thumbnail?: { readonly path: string; readonly extension: "jpg" };
 }
 
 const text = { type: 'string', minLength: 1 } as const;
 const positiveInteger = { type: 'integer', minimum: 1 } as const;
 export const comicSchema = {
   type: 'object', additionalProperties: false,
-  required: ['id', 'title', 'description', 'series', 'genre', 'publicationYear', 'shortSynopsis', 'synopsis', 'coverKey'],
+  required: ['id', 'title', 'description', 'series', 'genre', 'publicationYear', 'shortSynopsis', 'synopsis'],
   properties: {
     id: positiveInteger, title: text, description: text, series: text,
     issueNumber: positiveInteger, volumeNumber: positiveInteger, genre: text,
     publicationYear: positiveInteger, shortSynopsis: text, synopsis: text, coverKey: text,
+    thumbnail: {
+      type: 'object', additionalProperties: false, required: ['path', 'extension'],
+      properties: {
+        path: { type: 'string', format: 'uri', pattern: '^https://' },
+        extension: { type: 'string', const: 'jpg' },
+      },
+    },
   },
 } as const;
 

@@ -6,7 +6,7 @@ async function main() {
   const app = buildApp({
     logger: { level: env.level },
     disableRequestLogging: true,
-  });
+  }, { publicBaseUrl: env.publicBaseUrl });
   // Log route templates only; never raw URLs, headers or request payloads.
   app.addHook('onResponse', (request, reply, done) => {
     request.log.info({ method: request.method, route: request.routeOptions.url ?? 'unmatched', statusCode: reply.statusCode }, 'Request completed');
