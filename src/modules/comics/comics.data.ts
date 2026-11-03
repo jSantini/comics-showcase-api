@@ -1,6 +1,40 @@
 import type { Comic } from "./comics.schemas.js";
 // Source: jSantini/comics_sample@34fd91326e3d270ad3e6abd7580c60838d9f7ed2, DemoComicsRepository.kt
 export const comics: readonly Comic[] = Object.freeze([
+{
+  "id": 7,
+  "title": "Protocolo Ômega: Última Transmissão",
+  "series": "Protocolo Ômega",
+  "issueNumber": 1,
+  "genre": "Ficção científica / Suspense",
+  "publicationYear": 2026,
+  "shortSynopsis": "Uma analista recebe um pedido de socorro enviado com sua própria voz e tem seis horas para impedir que uma estação apague os últimos sinais da Terra.",
+  "synopsis": "Na estação de escuta Nadir, a analista de comunicações Helena Reis monitora um corredor espacial abandonado. Durante um turno de rotina, ela recebe uma transmissão com sua própria voz, gravada seis horas no futuro: ninguém deve ativar o Protocolo Ômega. Quando os sistemas começam a eliminar registros da Terra e os colegas negam lembrar do planeta, Helena encontra mensagens escondidas nos intervalos do ruído cósmico. Cada uma descreve uma tentativa anterior de fuga que ela não recorda ter vivido. Com a estação se preparando para transmitir um comando irreversível, Helena precisa descobrir se o aviso veio de uma versão sua que tentou salvá-los ou de algo que aprendeu a imitá-la.",
+  "description": "Na estação de escuta Nadir, a analista de comunicações Helena Reis monitora um corredor espacial abandonado. Durante um turno de rotina, ela recebe uma transmissão com sua própria voz, gravada seis horas no futuro: ninguém deve ativar o Protocolo Ômega. Quando os sistemas começam a eliminar registros da Terra e os colegas negam lembrar do planeta, Helena encontra mensagens escondidas nos intervalos do ruído cósmico. Cada uma descreve uma tentativa anterior de fuga que ela não recorda ter vivido. Com a estação se preparando para transmitir um comando irreversível, Helena precisa descobrir se o aviso veio de uma versão sua que tentou salvá-los ou de algo que aprendeu a imitá-la."
+},
+{
+  "id": 8,
+  "title": "Distrito Neon: Código Fantasma",
+  "series": "Distrito Neon",
+  "issueNumber": 1,
+  "genre": "Cyberpunk / Investigação",
+  "publicationYear": 2026,
+  "shortSynopsis": "Ao investigar um crime sem vítima registrada, uma perita encontra rastros digitais de moradores que a cidade insiste em nunca ter abrigado.",
+  "synopsis": "No Distrito Neon de Nova Maré, toda presença humana deixa uma assinatura na rede municipal. A perita digital Joana Vidal é chamada a um apartamento coberto de sangue, mas nenhum sistema reconhece o morador e a porta registra décadas sem uso. Um fragmento de código encontrado numa câmera desativada permite que Joana enxergue uma segunda cidade sobreposta às ruas: bairros inteiros ocupados por pessoas excluídas dos cadastros. Seguindo os rastros com a ajuda de um técnico de semáforos, ela descobre que os apagamentos financiam a expansão de uma infraestrutura vendida como infalível. Quando sua própria assinatura começa a desaparecer, Joana terá de preservar provas fora da rede e decidir em quem confiar antes de se tornar mais um caso sem vítima.",
+  "description": "No Distrito Neon de Nova Maré, toda presença humana deixa uma assinatura na rede municipal. A perita digital Joana Vidal é chamada a um apartamento coberto de sangue, mas nenhum sistema reconhece o morador e a porta registra décadas sem uso. Um fragmento de código encontrado numa câmera desativada permite que Joana enxergue uma segunda cidade sobreposta às ruas: bairros inteiros ocupados por pessoas excluídas dos cadastros. Seguindo os rastros com a ajuda de um técnico de semáforos, ela descobre que os apagamentos financiam a expansão de uma infraestrutura vendida como infalível. Quando sua própria assinatura começa a desaparecer, Joana terá de preservar provas fora da rede e decidir em quem confiar antes de se tornar mais um caso sem vítima."
+},
+{
+  "id": 9,
+  "title": "O Reino das Cinzas: Herdeira do Fogo",
+  "series": "O Reino das Cinzas",
+  "issueNumber": 1,
+  "genre": "Fantasia épica",
+  "publicationYear": 2026,
+  "shortSynopsis": "Uma aprendiz capaz de ouvir o fogo atravessa um reino soterrado por cinzas para devolver às aldeias a chama que a coroa mantém aprisionada.",
+  "synopsis": "Há trinta anos, a montanha de Ardel cobriu o reino de cinzas e o fogo deixou de nascer fora das fornalhas reais. Criada numa aldeia que troca colheitas por brasas, a aprendiz de ceramista Iara descobre que consegue ouvir as vozes presas nas chamas. Elas a chamam de herdeira e indicam uma estrada sob os campos queimados. Acompanhada por um guardião que rompeu seu juramento à coroa, Iara parte em busca da primeira fornalha, onde acredita poder libertar o calor roubado de seu povo. Ao longo da viagem, descobre que sua linhagem ajudou a selar a montanha para encerrar uma guerra. Romper o selo pode devolver a vida às aldeias ou despertar o incêndio que seus antepassados não conseguiram deter.",
+  "description": "Há trinta anos, a montanha de Ardel cobriu o reino de cinzas e o fogo deixou de nascer fora das fornalhas reais. Criada numa aldeia que troca colheitas por brasas, a aprendiz de ceramista Iara descobre que consegue ouvir as vozes presas nas chamas. Elas a chamam de herdeira e indicam uma estrada sob os campos queimados. Acompanhada por um guardião que rompeu seu juramento à coroa, Iara parte em busca da primeira fornalha, onde acredita poder libertar o calor roubado de seu povo. Ao longo da viagem, descobre que sua linhagem ajudou a selar a montanha para encerrar uma guerra. Romper o selo pode devolver a vida às aldeias ou despertar o incêndio que seus antepassados não conseguiram deter."
+},
+
   {
     "id": 1,
     "title": "Aurora: O Primeiro Sinal",

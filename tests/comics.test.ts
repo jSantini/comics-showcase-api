@@ -3,17 +3,17 @@ import assert from 'node:assert/strict';
 import { buildApp } from '../src/app.js';
 import { comics } from '../src/modules/comics/comics.data.js';
 
-test('catalog preserves Android envelope and all six original entries', async t => {
+test('catalog preserves Android envelope and nine ordered entries', async t => {
   const app = buildApp();
   t.after(() => app.close());
   const response = await app.inject('/api/comics');
   assert.equal(response.statusCode, 200);
   assert.match(response.headers['content-type']!, /application\/json/);
   assert.deepEqual(response.json(), { data: { results: comics } });
-  assert.deepEqual(comics.map(c => c.id), [1, 2, 3, 4, 5, 6]);
-  assert.equal(comics[0]?.title, 'Aurora: O Primeiro Sinal');
-  assert.equal(comics[4]?.volumeNumber, 1);
-  assert.equal(comics[4]?.issueNumber, undefined);
+  assert.deepEqual(comics.map(c => c.id), [7, 8, 9, 1, 2, 3, 4, 5, 6]);
+  assert.equal(comics[3]?.title, 'Aurora: O Primeiro Sinal');
+  assert.equal(comics[7]?.volumeNumber, 1);
+  assert.equal(comics[7]?.issueNumber, undefined);
   for (const comic of comics) {
     assert.equal(comic.synopsis, comic.description);
     const detail = await app.inject('/api/comics/' + comic.id);
