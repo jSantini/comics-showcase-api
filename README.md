@@ -1,67 +1,88 @@
 # Comics Showcase API
 
-A public portfolio backend for [jSantini/comics_sample](https://github.com/jSantini/comics_sample), demonstrating an explicit Android contract, strict validation and reproducible checks.
+A deployed portfolio backend for [Comics Sample for Android](https://github.com/jSantini/comics_sample), built with **Node.js 22, TypeScript strict, Fastify 5, Docker and Railway**. It demonstrates explicit HTTP contracts, schema validation, automated tests and HTTP image caching in a small Android-to-backend integration.
 
-## Architecture
+The Android app offers **six offline comics** from its embedded catalog and **nine online comics** from this API. Three remote-exclusive stories appear first and load their covers over HTTPS; the original six retain their bundled Android covers. The Android integration has been exercised successfully with all nine stories and the three remote images.
 
-Node.js 22, TypeScript strict, Fastify 5 and npm. Routes validate and serialize HTTP contracts; a service projects the immutable catalog; a central handler produces safe errors. No database, authentication, external APIs or runtime network dependencies.
+## Live Demo
 
-```text
-src/
-  app.ts                        # injectable app and deployment snapshot
-  server.ts                     # process lifecycle and structured logs
-  config/env.ts                 # validated environment
-  modules/comics/
-    comics.data.ts              # three new stories followed by six unchanged originals
-    comics.schemas.ts           # types and response/parameter schemas
-    comics.service.ts           # catalog and available-cover projection
-    comics.routes.ts            # HTTP boundary
-  modules/covers/covers.ts       # explicit filenames, bounded assets, HTTP caching
-  shared/errors.ts              # centralized safe errors
-public/covers/README.md          # bundled JPEG inventory and delivery specification
-tests/fixtures/original-comics.json  # regression baseline from main
-.github/workflows/ci.yml
-Dockerfile
-railway.toml
-```
+The backend is running on Railway. No API key or account is required.
 
-## Local development and validation
+| Resource | Public link |
+| --- | --- |
+| API health | [GET /health](https://comics-showcase-api-production.up.railway.app/health) |
+| Nine-story catalog | [GET /api/comics](https://comics-showcase-api-production.up.railway.app/api/comics) |
+| Protocolo Ômega cover | [JPEG](https://comics-showcase-api-production.up.railway.app/covers/protocolo-omega-v1.jpg) |
+| Distrito Neon cover | [JPEG](https://comics-showcase-api-production.up.railway.app/covers/distrito-neon-v1.jpg) |
+| O Reino das Cinzas cover | [JPEG](https://comics-showcase-api-production.up.railway.app/covers/reino-das-cinzas-v1.jpg) |
 
-Use Node.js 22 and npm:
+Explore the [HTTP contract](#http-contract), [Android integration](#android-integration), [image delivery](#image-delivery-and-cache) or [Railway deployment](#railway-deployment).
+
+## Quick Start
+
+### Run locally
+
+Install Node.js 22 and npm, then run from the repository root:
 
 ```sh
 npm ci
 npm run dev
+```
+
+The API listens at http://localhost:3000. Development mode watches TypeScript sources for changes.
+
+To advertise thumbnails while running locally, set `PUBLIC_BASE_URL` to the published HTTPS origin **before** starting the server:
+
+```powershell
+$env:PUBLIC_BASE_URL = "https://comics-showcase-api-production.up.railway.app"
+npm run dev
+```
+
+This serves the catalog locally while its thumbnail URLs point to the published Railway images. For a fully local image integration, use an HTTPS origin that reaches your local server. If `PUBLIC_BASE_URL` is unset, the catalog still works and the image routes still serve files, but `thumbnail` is omitted.
+
+### Typecheck, build and test
+
+```sh
 npm run typecheck
 npm run build
 npm test
+```
+
+To run the compiled server after building:
+
+```sh
 npm start
 ```
 
-Default: http://localhost:3000, host 0.0.0.0. PORT must be 1–65535; LOG_LEVEL defaults to info. Set variables in the shell or hosting settings: .env.example is documentation, not automatically loaded. Optional PUBLIC_BASE_URL is the real HTTPS origin without a path, credentials, query or fragment. Leave it unset until the public origin is known.
+All commands above are defined in [package.json](package.json). [`.env.example`](.env.example) documents non-sensitive settings; the server does **not** load environment files automatically.
 
-Dependencies and the lockfile are unchanged by this feature. Native Node APIs serve the three bounded cover assets without an extra package. CI runs npm ci, typecheck, build and tests on Node 22. Tests use Fastify inject without external servers. They cover catalog ordering, unique IDs, original-record regression, metadata, details, invalid IDs, missing resources, URL safety, byte responses, HEAD, ETag/304, cache headers, artwork constraints, configuration and safe internal errors.
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `3000` | Integer from 1 to 65535; supplied by Railway in production |
+| `LOG_LEVEL` | `info` | One of `fatal`, `error`, `warn`, `info`, `debug`, `trace`, `silent` |
+| `PUBLIC_BASE_URL` | Unset | HTTPS origin used to construct remote thumbnail URLs |
 
-## HTTP contract
+`PUBLIC_BASE_URL` accepts an origin with an optional trailing slash, but no credentials, path other than `/`, query or fragment. The server normalizes it to an origin. `NODE_ENV=production` is set in the Docker runtime image.
 
-| Endpoint | Response |
+## HTTP Contract
+
+| Endpoint | Success response |
 | --- | --- |
-| GET /health | 200, {"status":"ok"} |
-| GET /api/comics | 200, {"data":{"results":[...]}} |
-| GET /api/comics/:id | 200, one comic object |
-| GET or HEAD /covers/:filename | JPEG only for an available, explicitly registered cover |
+| `GET /health` | `200`, `{"status":"ok"}` |
+| `GET /api/comics` | `200`, `{"data":{"results":[...]}}` |
+| `GET /api/comics/:id` | `200`, one comic object, without the list envelope |
+| `GET /covers/:filename` | `200`, a registered JPEG cover |
+| `HEAD /covers/:filename` | Image headers without a response body |
 
-The list contains exactly nine stories in order **7, 8, 9, 1, 2, 3, 4, 5, 6**. IDs do not encode display order. New entries:
+The catalog contains nine records in this order: **7, 8, 9, 1, 2, 3, 4, 5, 6**. IDs identify records; they do not define display order.
 
-| ID | Title | Series | Issue | Genre | Year |
+| ID | Remote-exclusive story | Series | Issue | Genre | Year |
 | --- | --- | --- | --- | --- | --- |
 | 7 | Protocolo Ômega: Última Transmissão | Protocolo Ômega | 1 | Ficção científica / Suspense | 2026 |
 | 8 | Distrito Neon: Código Fantasma | Distrito Neon | 1 | Cyberpunk / Investigação | 2026 |
 | 9 | O Reino das Cinzas: Herdeira do Fogo | O Reino das Cinzas | 1 | Fantasia épica | 2026 |
 
-All records include id, title, description, series, genre, publicationYear, shortSynopsis and synopsis. description equals the full synopsis. issueNumber/volumeNumber are omitted when absent. IDs 1–6 keep every original field and local coverKey; IDs 7–9 omit coverKey entirely.
-
-A new record with PUBLIC_BASE_URL unset (the real list has nine items):
+The following is an excerpt of the first list item. The other eight records and the long `description`/`synopsis` fields are omitted here for readability; they are present in the actual response.
 
 ```json
 {
@@ -75,73 +96,159 @@ A new record with PUBLIC_BASE_URL unset (the real list has nine items):
         "genre": "Ficção científica / Suspense",
         "publicationYear": 2026,
         "shortSynopsis": "Uma analista recebe um pedido de socorro enviado com sua própria voz e tem seis horas para impedir que uma estação apague os últimos sinais da Terra.",
-        "synopsis": "Na estação de escuta Nadir, a analista de comunicações Helena Reis monitora um corredor espacial abandonado. Durante um turno de rotina, ela recebe uma transmissão com sua própria voz, gravada seis horas no futuro: ninguém deve ativar o Protocolo Ômega. Quando os sistemas começam a eliminar registros da Terra e os colegas negam lembrar do planeta, Helena encontra mensagens escondidas nos intervalos do ruído cósmico. Cada uma descreve uma tentativa anterior de fuga que ela não recorda ter vivido. Com a estação se preparando para transmitir um comando irreversível, Helena precisa descobrir se o aviso veio de uma versão sua que tentou salvá-los ou de algo que aprendeu a imitá-la.",
-        "description": "Na estação de escuta Nadir, a analista de comunicações Helena Reis monitora um corredor espacial abandonado. Durante um turno de rotina, ela recebe uma transmissão com sua própria voz, gravada seis horas no futuro: ninguém deve ativar o Protocolo Ômega. Quando os sistemas começam a eliminar registros da Terra e os colegas negam lembrar do planeta, Helena encontra mensagens escondidas nos intervalos do ruído cósmico. Cada uma descreve uma tentativa anterior de fuga que ela não recorda ter vivido. Com a estação se preparando para transmitir um comando irreversível, Helena precisa descobrir se o aviso veio de uma versão sua que tentou salvá-los ou de algo que aprendeu a imitá-la."
+        "thumbnail": {
+          "path": "https://comics-showcase-api-production.up.railway.app/covers/protocolo-omega-v1",
+          "extension": "jpg"
+        }
       }
     ]
   }
 }
 ```
 
-Once the corresponding final JPEG exists and PUBLIC_BASE_URL is set, only that new record gains the existing Android thumbnail shape:
+Every record includes `id`, `title`, `description`, `series`, `genre`, `publicationYear`, `shortSynopsis` and `synopsis`. In this catalog, `description` equals the full `synopsis`. Optional `issueNumber` and `volumeNumber` are omitted when absent.
+
+IDs 1–6 preserve their original texts, metadata and local `coverKey`. IDs 7–9 omit `coverKey` and include `thumbnail` when the corresponding cover is available and `PUBLIC_BASE_URL` is configured. The image URL is `thumbnail.path + "." + thumbnail.extension`.
+
+### Validation and errors
+
+JSON schemas validate route parameters and define serialized responses. IDs must be canonical positive Android `Int` values, from 1 to 2147483647. Zero, signs, leading zeroes, decimals and overflow return `400`; an unknown valid ID such as `999` returns `404`.
 
 ```json
 {
-  "thumbnail": {
-    "path": "https://comics.example.test/covers/protocolo-omega-v1",
-    "extension": "jpg"
+  "error": {
+    "code": "COMIC_NOT_FOUND",
+    "message": "Comic not found"
   }
 }
 ```
 
-The domain above is illustrative, not a deployed address. Android joins path + "." + extension. No new coverUrl field is needed. Missing images or an unset public origin omit thumbnail, rather than advertising a broken or temporary image. URLs never depend on Host or forwarded headers. List/detail responses use Cache-Control: no-store to allow refreshed catalog metadata.
+| Status | Code | Meaning |
+| --- | --- | --- |
+| 400 | `INVALID_REQUEST` | Invalid request parameters |
+| 404 | `COMIC_NOT_FOUND` | Unknown comic ID |
+| 404 | `COVER_NOT_FOUND` | Unavailable or unregistered cover filename |
+| 404 | `NOT_FOUND` | Unknown route |
+| 500 | `INTERNAL_ERROR` | Unexpected server failure; internal details are not returned |
 
-IDs are canonical positive Android Int values (1–2147483647); zero, signs, leading zeroes, decimals and overflow return 400. Unknown valid IDs return 404.
+List and detail routes set `Cache-Control: no-store`, so refreshed catalog requests can receive current metadata and image URLs.
 
-```json
-{"error":{"code":"COMIC_NOT_FOUND","message":"Comic not found"}}
+## Android Integration
+
+The integration uses the existing Retrofit `@GET("comics")` endpoint and `data.results` envelope. Configure the Android build's `COMICS_BASE_URL` as:
+
+```text
+https://comics-showcase-api-production.up.railway.app/api/
 ```
 
-Other codes: INVALID_REQUEST (400), NOT_FOUND (404 route), COVER_NOT_FOUND (404 cover), INTERNAL_ERROR (500). Internal details are not returned. Logs record request ID, method, route template and status without raw URLs, headers, bodies or credentials.
+The trailing slash matters: Retrofit appends `comics` to this base URL.
 
-## Original cover delivery
+| Mode | Catalog | Cover source |
+| --- | --- | --- |
+| Offline/demo | Six embedded stories, IDs 1–6 | Bundled Android resources |
+| Online | Nine stories; IDs 7–9 appear first | HTTPS images for IDs 7–9; bundled resources for IDs 1–6 |
 
-The implementation serves these three exact files from public/covers:
+The Offline mode always uses `DemoComicsRepository`. The Online mode uses `RemoteComicsRepository` when `COMICS_BASE_URL` is configured; otherwise, it reports a recoverable network error. There is no automatic fallback from Online to Offline.
 
-- protocolo-omega-v1.jpg
-- distrito-neon-v1.jpg
-- reino-das-cinzas-v1.jpg
+`ComicsResponseDto.toComics()` maps the nullable DTO metadata and combines `thumbnail.path`/`extension` into `imageUrl`. Image URLs must use HTTPS without credentials, query strings or fragments. `ComicCover` prefers a recognized local `coverKey`, then the remote `imageUrl`; `ComicImageClient` does not follow redirects. The API's direct HTTPS image URLs fit this contract without an additional URL field.
 
-The three final JPEGs are included; no placeholder artwork is shipped. See public/covers/README.md for production requirements: original portrait JPEG, preferably 800 x 1200, target 150–250 KiB, maximum 400 KiB per file, with EXIF removed and a visual review before publication.
+No Android change is required for the inspected contract. The original six offline records and their local resources remain separate from the three online-exclusive stories. If a thumbnail is absent or an image fails to load, the Android cover component has an unavailable-cover state.
 
-The server loads available files once at startup, checks JPEG signatures/size and computes content-based ETags. Invalid files fail startup. Encoded bytes consume at most 1.2 MiB per process. Files ship inside the Docker image; no paid external storage, upload endpoint or persistent volume is needed. Only explicit filenames are routable; README and arbitrary filesystem paths are never served.
+The contract reference is [Android revision acc2a13d](https://github.com/jSantini/comics_sample/tree/acc2a13d750d6f0da7a1beac9a9d8e48180c7d34). Relevant files include `ComicsAPI.kt`, `ComicsResponseDto.kt`, `NetworkModule.kt`, `ComicCover.kt` and `ComicImageClient.kt`.
 
-Successful responses use image/jpeg, nosniff and Cache-Control: public, max-age=31536000, immutable. Conditional requests support If-None-Match/304, including weak validators, and HEAD returns headers without a body. Missing covers return 404/no-store. Rename artwork to v2 (and update the manifest and thumbnail projection) for future changes; do not change published v1 bytes. Keep older version routes/files during cache transitions. Range requests and image resizing are not implemented.
+## Architecture
 
-Images consume Railway bandwidth/requests and some process memory. Android should keep Coil's lazy fetching, display-sized decoding and normal memory/disk caching. Long-lived asset URLs avoid repeated transfers; no base64 is embedded in JSON.
+The application keeps a small module structure without a database, authentication or external API calls:
 
-## Android compatibility
+```text
+src/
+  app.ts                         # injectable app factory and deployment snapshot
+  server.ts                      # startup, structured logs and graceful shutdown
+  config/env.ts                  # validated environment
+  modules/
+    comics/
+      comics.data.ts             # nine immutable fictional records
+      comics.schemas.ts          # TypeScript types and JSON schemas
+      comics.service.ts          # catalog reads and thumbnail projection
+      comics.routes.ts           # HTTP boundary
+    covers/covers.ts             # cover allowlist, bounded assets and HTTP cache
+  shared/errors.ts               # centralized safe error responses
+public/covers/                    # three bundled JPEG covers and asset inventory
+tests/                           # Fastify inject tests and original catalog fixture
+.github/workflows/ci.yml          # Node.js 22 validation pipeline
+Dockerfile                       # multistage production image
+railway.toml                     # build, start and readiness configuration
+```
 
-The original catalog was sourced at [34fd91326e3d270ad3e6abd7580c60838d9f7ed2](https://github.com/jSantini/comics_sample/tree/34fd91326e3d270ad3e6abd7580c60838d9f7ed2). For this feature, the contract was re-inspected on feature/offline-comics-details at [acc2a13d750d6f0da7a1beac9a9d8e48180c7d34](https://github.com/jSantini/comics_sample/tree/acc2a13d750d6f0da7a1beac9a9d8e48180c7d34).
+[Comics routes](src/modules/comics/comics.routes.ts) handle HTTP concerns, the [service](src/modules/comics/comics.service.ts) projects catalog data, and [schemas](src/modules/comics/comics.schemas.ts) define validation and response serialization. [`buildApp()`](src/app.ts) creates the application independently of the listening process, allowing tests to use Fastify inject without an external server.
 
-ComicsAPI uses @GET("comics"); configure COMICS_BASE_URL with the real HTTPS origin plus /api/, including the trailing slash. ComicsResponseDto.toComics() already accepts thumbnail.path/extension, validates HTTPS without credentials/query/fragment, and maps the additional catalog metadata. ComicCover prefers a known local coverKey, then imageUrl. ComicImageClient requires HTTPS and does not follow redirects.
+Startup validates environment values and loads the available cover snapshot. Configuration errors or invalid cover files stop startup. The server binds to `0.0.0.0`, handles listening failures and closes on `SIGTERM`/`SIGINT` with a ten-second shutdown deadline.
 
-**No Android production code change is required for the inspected branch.** New records omit coverKey and use remote thumbnails when available. Until then, the current unavailable-cover UI is expected. Keep the six demo comics and bundled covers unchanged. Recommended Android tests: nine remote entries in server order, thumbnail URL composition, absent thumbnail, no local resource fallback for new IDs and valid remote image rendering. Older Android revisions lacking metadata mapping need the nullable metadata fields/mapper updates described by the current branch; no new URL DTO field is necessary.
+Logs include request ID, method, route template and response status. Raw request URLs, headers, bodies and credentials are not logged. Thumbnail origins come only from validated configuration, never from client `Host` or forwarded headers.
 
-## Railway publication plan — after approval
+## Image Delivery and Cache
 
-1. Review this feature diff and the three bundled JPEG covers, including the approved Portuguese title correction documented in public/covers/README.md.
-2. Run npm ci, typecheck, build and tests. Validate the Docker image locally when Docker Desktop is running; the existing COPY public ./public includes all three JPEGs.
-3. After explicit approval, commit/push the feature branch, review CI and merge through the normal process. No commit, push, merge or deploy is performed by this feature task.
-4. Railway uses railway.toml and the multistage Dockerfile; the runtime image now includes public/. Reuse an existing service if one is configured, or create a service from this backend repository with the repository root as context.
-5. Set PUBLIC_BASE_URL to the service's actual public HTTPS origin. Railway supplies PORT; npm start binds 0.0.0.0 and /health confirms readiness. No image storage credentials are needed.
-6. Verify health, nine-item ordering, details for IDs 1 and 7–9, original metadata, full thumbnail HTTPS URLs, JPEG bytes/headers, HEAD/304 and unknown-cover 404. Check URLs without redirects because Android disables them.
-7. Use the real origin plus /api/ in Android and verify remote rendering on device, cache behavior and unchanged local demo mode.
+The three final JPEGs are bundled in [public/covers](public/covers/README.md) and copied into the Docker runtime image. Only filenames listed in the [cover manifest](src/modules/covers/covers.ts) are served. Other files, including the asset README, are not exposed by that route.
 
-The infrastructure is prepared; no Railway deployment is claimed. If publishing before artwork is ready, the nine stories work with no thumbnails and no misleading image URLs. See [Railway health checks](https://docs.railway.com/deployments/healthchecks) for readiness semantics.
+At startup, the server loads each available file, checks its JPEG signature and enforces a nonempty-file limit of **400 KiB per cover**. The three encoded buffers use at most 1200 KiB per process, plus normal application overhead. A missing file is omitted from thumbnail projection; an invalid or oversized file stops startup. Final asset dimensions, sizes and SHA-256 hashes are recorded in the [asset inventory](public/covers/README.md).
 
-## Trade-offs and provenance
+Successful image responses include:
 
-Nine immutable records need no database and remain easy to review. Catalog/artwork changes require a build and deployment. Instances serve identical snapshots from their image. There are no writes, pagination, search or editorial tools. A database becomes useful when content needs independent updates or grows beyond this small showcase. Native Android does not require browser CORS.
+```http
+Content-Type: image/jpeg
+Cache-Control: public, max-age=31536000, immutable
+ETag: "<SHA-256 of the image bytes>"
+X-Content-Type-Options: nosniff
+```
 
-IDs 1–6 retain the exact Portuguese texts and metadata from jSantini/comics_sample's DemoComicsRepository.kt at the original revision above. A checked-in regression fixture protects every field. IDs 7–9 are new fictional stories written for this backend; their short/full synopses, series and issue metadata are original to this change. No Marvel content, credentials, third-party artwork or external API dependencies are included.
+`HEAD` returns the image headers without a body. `If-None-Match` supports conditional `304 Not Modified` responses, including weak validators and `*`. Missing or unregistered cover filenames return `404` with `Cache-Control: no-store`.
+
+Versioned filenames make long-lived caching safe: use a new filename and update the manifest when artwork changes, rather than replacing published `v1` bytes. Keep earlier files/routes available during a version transition. Image resizing and range requests are not implemented.
+
+There is no paid external storage, upload endpoint or persistent volume. Images still consume Railway bandwidth and request capacity. On Android, Coil can fetch lazily, decode to display size and reuse its memory/disk caches; the catalog carries URLs rather than base64 image data.
+
+## Tests and CI
+
+[GitHub Actions](.github/workflows/ci.yml) runs `npm ci`, typecheck, build and tests on Node.js 22 for pushes and pull requests. Dependencies are pinned in [package.json](package.json) and [package-lock.json](package-lock.json).
+
+The automated suite uses Fastify inject and covers:
+
+- Nine-story ordering, unique IDs, metadata and list/detail serialization.
+- Exact preservation of all original fields for IDs 1–6 through a [regression fixture](tests/fixtures/original-comics.json).
+- Invalid IDs, missing comics/routes, environment validation and sanitized errors.
+- Actual bundled cover bytes, the Android thumbnail contract and configured HTTPS origins.
+- Missing, invalid and oversized artwork; exclusion of arbitrary filenames.
+- Image content types, ETags, cache headers, `HEAD` and conditional `304` responses.
+
+Run the commands in [Quick Start](#quick-start) to validate a checkout. Android UI/device tests belong to the Android project; this repository tests the backend HTTP boundary.
+
+## Railway Deployment
+
+The live service uses the checked-in [Railway configuration](railway.toml) and [multistage Dockerfile](Dockerfile):
+
+- The build stage uses Node.js 22, installs the lockfile with `npm ci`, compiles TypeScript and removes development dependencies.
+- The runtime image contains compiled code, production dependencies and `public/`, runs as the non-root `node` user and starts with `npm start`.
+- Railway supplies `PORT`; the server listens on `0.0.0.0`.
+- `PUBLIC_BASE_URL` is the public HTTPS origin used in thumbnail responses:
+
+```text
+PUBLIC_BASE_URL=https://comics-showcase-api-production.up.railway.app
+```
+
+Use the origin only—do not append `/api/` or `/covers/`. That differs from Android's `COMICS_BASE_URL`, which includes `/api/`.
+
+The readiness endpoint is `/health`, with a configured 30-second timeout. The restart policy is `ON_FAILURE` with a maximum of three retries. Railway readiness checks govern deployment activation; they are not continuous uptime monitoring. See [Railway health checks](https://docs.railway.com/deployments/healthchecks).
+
+The Node 22 Docker base tag receives upstream updates; dependency installation is lockfile-based, while the base image is not pinned to a digest. Catalog and artwork updates are delivered as part of a new application image. No database or image-storage credentials are required.
+
+## Limits and Trade-offs
+
+An immutable nine-record catalog keeps setup, deployment and review simple. Each instance serves the same snapshot from its application image, but content updates require a build and deployment. A database would become useful for independently managed or substantially larger catalogs.
+
+There are no write operations, pagination, search, authentication or editorial tools. Browser CORS is not enabled because the native Android client does not require it. The public service is a focused portfolio demonstration, with no dependency on Marvel or another content provider.
+
+## Catalog Provenance
+
+IDs 1–6 retain the Portuguese texts, synopses, metadata and local cover keys from `DemoComicsRepository.kt` at [Android revision 34fd9132](https://github.com/jSantini/comics_sample/tree/34fd91326e3d270ad3e6abd7580c60838d9f7ed2).
+
+IDs 7–9 are fictional stories written for this backend, with dedicated short/full synopses and cover artwork. Protocolo Ômega includes the approved Portuguese title correction. The service uses no Marvel content, credentials or external API dependencies.
